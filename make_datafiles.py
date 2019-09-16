@@ -16,14 +16,12 @@ END_TOKENS = ['.', '!', '?', '...', "'", "`", '"', dm_single_close_quote, dm_dou
 SENTENCE_START = '<s>'
 SENTENCE_END = '</s>'
 
-all_train_urls = "url_lists/all_train.txt"
-all_val_urls = "url_lists/all_val.txt"
-all_test_urls = "url_lists/all_test.txt"
+home = os.environ['HOME']
+chunks_dir = os.path.join(os.path.join(home, 'hai', 'hack', 'finished', "chunked"))
 
-cnn_tokenized_stories_dir = "cnn_stories_tokenized"
-dm_tokenized_stories_dir = "dm_stories_tokenized"
-finished_files_dir = "finished_files"
-chunks_dir = os.path.join(finished_files_dir, "chunked")
+dm_stories_dir = os.path.join(home, 'hai', 'hack', 'raw')
+dm_tokenized_stories_dir = os.path.join(home, 'hai', 'hack', 'tokenized')
+finished_files_dir = os.path.join(home, 'hai', 'hack', 'finished')
 
 # These are the number of .story files we expect there to be in cnn_stories_dir and dm_stories_dir
 num_expected_cnn_stories = 92579
@@ -34,7 +32,7 @@ CHUNK_SIZE = 1000 # num examples per chunk, for the chunked data
 
 
 def chunk_file(set_name):
-  in_file = 'finished_files/%s.bin' % set_name
+  in_file = os.path.join(home, 'hai', 'hack', 'finished/%s.bin' % set_name)
   reader = open(in_file, "rb")
   chunk = 0
   finished = False
@@ -56,8 +54,7 @@ def chunk_file(set_name):
 def chunk_all():
   # Make a dir to hold the chunks
   if not os.path.isdir(chunks_dir):
-    os.mkdir(chunks_dir)
-  # Chunk the data
+    os.mkdir(chunks_dir) # Chunk the data
   for set_name in ['train', 'val', 'test']:
     print("Splitting %s data into chunks..." % set_name)
     chunk_file(set_name)
@@ -147,12 +144,12 @@ def get_art_abs(story_file):
   return article, abstract
 
 
-def write_to_bin(url_file, out_file, makevocab=False):
+def write_to_bin(story_fnames, out_file, makevocab=False):
   """Reads the tokenized .story files corresponding to the urls listed in the url_file and writes them to a out_file."""
-  print("Making bin file for URLs listed in %s..." % url_file)
-  url_list = read_text_file(url_file)
-  url_hashes = get_url_hashes(url_list)
-  story_fnames = [s+".story" for s in url_hashes]
+  # print("Making bin file for URLs listed in %s..." % url_file)
+  # url_list = read_text_file(url_file)
+  # url_hashes = get_url_hashes(url_list)
+  # story_fnames = [s+".story" for s in url_hashes]
   num_stories = len(story_fnames)
 
   if makevocab:
@@ -163,18 +160,20 @@ def write_to_bin(url_file, out_file, makevocab=False):
       if idx % 1000 == 0:
         print("Writing story %i of %i; %.2f percent done" % (idx, num_stories, float(idx)*100.0/float(num_stories)))
 
+        story_file = s
+
       # Look in the tokenized story dirs to find the .story file corresponding to this url
-      if os.path.isfile(os.path.join(cnn_tokenized_stories_dir, s)):
-        story_file = os.path.join(cnn_tokenized_stories_dir, s)
-      elif os.path.isfile(os.path.join(dm_tokenized_stories_dir, s)):
-        story_file = os.path.join(dm_tokenized_stories_dir, s)
-      else:
-        print("Error: Couldn't find tokenized story file %s in either tokenized story directories %s and %s. Was there an error during tokenization?" % (s, cnn_tokenized_stories_dir, dm_tokenized_stories_dir))
-        # Check again if tokenized stories directories contain correct number of files
-        print("Checking that the tokenized stories directories %s and %s contain correct number of files..." % (cnn_tokenized_stories_dir, dm_tokenized_stories_dir))
-        check_num_stories(cnn_tokenized_stories_dir, num_expected_cnn_stories)
-        check_num_stories(dm_tokenized_stories_dir, num_expected_dm_stories)
-        raise Exception("Tokenized stories directories %s and %s contain correct number of files but story file %s found in neither." % (cnn_tokenized_stories_dir, dm_tokenized_stories_dir, s))
+      # if os.path.isfile(os.path.join(cnn_tokenized_stories_dir, s)):
+      #   story_file = os.path.join(cnn_tokenized_stories_dir, s)
+      # elif os.path.isfile(os.path.join(dm_tokenized_stories_dir, s)):
+      #   story_file = os.path.join(dm_tokenized_stories_dir, s)
+      # else:
+      #   print("Error: Couldn't find tokenized story file %s in either tokenized story directories %s and %s. Was there an error during tokenization?" % (s, cnn_tokenized_stories_dir, dm_tokenized_stories_dir))
+      #   # Check again if tokenized stories directories contain correct number of files
+      #   print("Checking that the tokenized stories directories %s and %s contain correct number of files..." % (cnn_tokenized_stories_dir, dm_tokenized_stories_dir))
+      #   # check_num_stories(cnn_tokenized_stories_dir, num_expected_cnn_stories)
+      #   # check_num_stories(dm_tokenized_stories_dir, num_expected_dm_stories)
+      #   raise Exception("Tokenized stories directories %s and %s contain correct number of files but story file %s found in neither." % (cnn_tokenized_stories_dir, dm_tokenized_stories_dir, s))
 
       # Get the strings to write to .bin file
       article, abstract = get_art_abs(story_file)
@@ -216,29 +215,31 @@ def check_num_stories(stories_dir, num_expected):
 
 
 if __name__ == '__main__':
-  if len(sys.argv) != 3:
-    print("USAGE: python make_datafiles.py <cnn_stories_dir> <dailymail_stories_dir>")
-    sys.exit()
-  cnn_stories_dir = sys.argv[1]
-  dm_stories_dir = sys.argv[2]
+  # if len(sys.argv) != 3:
+  #   print("USAGE: python make_datafiles.py <cnn_stories_dir> <dailymail_stories_dir>")
+  #   sys.exit()
+  # cnn_stories_dir = sys.argv[1]
+  # dm_stories_dir = sys.argv[2]
 
   # Check the stories directories contain the correct number of .story files
-  check_num_stories(cnn_stories_dir, num_expected_cnn_stories)
-  check_num_stories(dm_stories_dir, num_expected_dm_stories)
+  # check_num_stories(cnn_stories_dir, num_expected_cnn_stories)
 
   # Create some new directories
-  if not os.path.exists(cnn_tokenized_stories_dir): os.makedirs(cnn_tokenized_stories_dir)
+  # if not os.path.exists(cnn_tokenized_stories_dir): os.makedirs(cnn_tokenized_stories_dir)
   if not os.path.exists(dm_tokenized_stories_dir): os.makedirs(dm_tokenized_stories_dir)
   if not os.path.exists(finished_files_dir): os.makedirs(finished_files_dir)
 
   # Run stanford tokenizer on both stories dirs, outputting to tokenized stories directories
-  tokenize_stories(cnn_stories_dir, cnn_tokenized_stories_dir)
+  # tokenize_stories(cnn_stories_dir, cnn_tokenized_stories_dir)
   tokenize_stories(dm_stories_dir, dm_tokenized_stories_dir)
 
   # Read the tokenized stories, do a little postprocessing then write to bin files
+  base = '{}/hai/hack/tokenized'.format(home)
+  all_test_urls = os.listdir(base)
+  all_test_urls = [os.path.join(base, a) for a in all_test_urls]
   write_to_bin(all_test_urls, os.path.join(finished_files_dir, "test.bin"))
-  write_to_bin(all_val_urls, os.path.join(finished_files_dir, "val.bin"))
-  write_to_bin(all_train_urls, os.path.join(finished_files_dir, "train.bin"), makevocab=True)
+  # write_to_bin(all_val_urls, os.path.join(finished_files_dir, "val.bin"))
+  # write_to_bin(all_train_urls, os.path.join(finished_files_dir, "train.bin"), makevocab=True)
 
   # Chunk the data. This splits each of train.bin, val.bin and test.bin into smaller chunks, each containing e.g. 1000 examples, and saves them in finished_files/chunks
-  chunk_all()
+  # chunk_all()

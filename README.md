@@ -2,6 +2,35 @@ This code produces the non-anonymized version of the CNN / Daily Mail summarizat
 
 # Instructions
 
+## 0. Notes for Hai
+
+This repo has been hacked to work in a directory `~/hai/hack`
+
+Put raw files (as `.story`) into `~/hai/hack/raw`
+
+Setup the repo (as below) - make sure you put the `export CLASSPATH` into your bashrc
+
+Run `python make_datafiles.py`
+
+Your final results will be something like:
+```
+├── finished
+│   └── test.bin
+├── out
+├── raw
+│   └── blog.story
+└── tokenized
+    └── blog.story
+```
+
+`test.bin` is what we want - when we run the pointer generator we use:
+
+```
+python run_summarization.py --mode=decode --data_path=/Users/hai/hai/hack/finished/test.bin --vocab_path=/Users/hai/hai/finished_files/vocab --log_root=/Users/hai/hai/logs --exp_name=adam
+```
+
+Note that we also need to use the pretrained model (put it into log_root) and the pretrained vocab (in vocab_path)
+
 ## 1. Download data
 Download and unzip the `stories` directories from [here](http://cs.nyu.edu/~kcho/DMQA/) for both CNN and Daily Mail. 
 
